@@ -181,3 +181,8 @@ INFO:     106.196.20.46:0 - "GET /mood?limit=30 HTTP/1.1" 200 OK
 INFO:     106.196.20.46:0 - "GET /habits?limit=30 HTTP/1.1" 200 OK
 INFO:     106.196.20.46:0 - "GET /productivity?limit=30 HTTP/1.1" 200 OK
 INFO:     106.196.20.46:0 - "GET /mood?limit=30 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23920]
+INFO:     Stopping reloader process [23918]
