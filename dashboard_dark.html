@@ -159,6 +159,11 @@
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
         }
         
+        /* Alpine.js cloak fix */
+        [x-cloak] {
+            display: none !important;
+        }
+        
         .particle {
             position: absolute;
             border-radius: 50%;
@@ -279,7 +284,7 @@
         </div>
 
         <!-- Dashboard -->
-        <div x-show="isAuthenticated" x-cloak class="space-y-6 animate-fade-in">
+        <div x-show="isAuthenticated" class="space-y-6 animate-fade-in">
             
             <!-- Welcome Header -->
             <div class="glow-card rounded-3xl p-6">
@@ -310,14 +315,14 @@
                         📊 Overview
                     </button>
                     <button 
-                        @click="currentTab = 'track'"
+                        @click="console.log('Track tab clicked'); currentTab = 'track'"
                         :class="currentTab === 'track' ? 'gradient-purple text-white shadow-lg shadow-purple-500/50 scale-105' : 'bg-black text-gray-400 hover:text-white hover:bg-gray-900'"
                         class="py-4 px-6 rounded-2xl font-bold transition-all transform"
                     >
                         📝 Track
                     </button>
                     <button 
-                        @click="currentTab = 'analytics'; loadAnalytics()"
+                        @click="console.log('Analytics tab clicked'); currentTab = 'analytics'; loadAnalytics()"
                         :class="currentTab === 'analytics' ? 'gradient-purple text-white shadow-lg shadow-purple-500/50 scale-105' : 'bg-black text-gray-400 hover:text-white hover:bg-gray-900'"
                         class="py-4 px-6 rounded-2xl font-bold transition-all transform"
                     >
@@ -338,6 +343,13 @@
                         💬 Chat
                     </button>
                 </div>
+            </div>
+
+            <!-- Debug: Current Tab Display -->
+            <div class="glow-card rounded-xl p-4 mb-4 bg-purple-900/20 border border-purple-500/30">
+                <p class="text-sm text-gray-400">
+                    🐛 Debug: Current Tab = <span class="text-purple-400 font-bold" x-text="currentTab"></span>
+                </p>
             </div>
 
             <!-- Overview Tab -->
@@ -450,6 +462,11 @@
 
             <!-- Track Tab -->
             <div x-show="currentTab === 'track'" class="space-y-6">
+                <!-- TEST CONTENT -->
+                <div class="bg-green-500 p-4 text-white font-bold text-center rounded">
+                    ✅ TRACK TAB IS WORKING! This green box proves x-show works.
+                </div>
+                
                 <div class="glow-card rounded-3xl p-8">
                     <h3 class="text-3xl font-black gradient-text mb-8">📝 Log Your Daily Data</h3>
                     
@@ -568,6 +585,11 @@
 
             <!-- Analytics Tab -->
             <div x-show="currentTab === 'analytics'" class="space-y-6">
+                <!-- TEST CONTENT -->
+                <div class="bg-red-500 p-4 text-white font-bold text-center rounded">
+                    ✅ ANALYTICS TAB IS WORKING! This red box proves x-show works.
+                </div>
+                
                 <div class="glow-card rounded-3xl p-8">
                     <h3 class="text-3xl font-black gradient-text mb-6">📈 Habit Analytics</h3>
                     <div id="analyticsContent" class="space-y-6"></div>
@@ -678,17 +700,22 @@
                 charts: {},
                 
                 init() {
+                    console.log('🚀 Dashboard initialized');
                     console.log('API URL:', this.API_URL);
+                    console.log('Current Tab:', this.currentTab);
                     
                     // Check for saved token in localStorage
                     const savedToken = localStorage.getItem('ai_guidance_token');
                     const savedUsername = localStorage.getItem('ai_guidance_username');
                     
                     if (savedToken && savedUsername) {
+                        console.log('✅ Found saved session, auto-logging in...');
                         this.token = savedToken;
                         this.credentials.username = savedUsername;
                         this.isAuthenticated = true;
                         this.loadDashboard();
+                    } else {
+                        console.log('ℹ️ No saved session found');
                     }
                 },
                 
