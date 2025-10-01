@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal AI Guidance System - API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .links {
+            margin: 20px 0;
+        }
+        .links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .links a:hover {
+            background: #229954;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Personal AI Guidance System</h1>
+        
+        <div id="status" class="status info">
+            ⏳ Testing connection...
+        </div>
+
+        <div class="links">
+            <h2>📚 Quick Links</h2>
+            <a href="http://localhost:8000/docs" target="_blank">📖 Interactive API Docs (Swagger)</a>
+            <a href="http://localhost:8000/redoc" target="_blank">📋 API Documentation (ReDoc)</a>
+            <a href="http://localhost:8000/" target="_blank">🏠 API Root</a>
+        </div>
+
+        <h2>🧪 API Test</h2>
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="getFeatures()">Get Features</button>
+        <button onclick="registerUser()">Register Test User</button>
+
+        <h2>📊 Response:</h2>
+        <pre id="response">Click a button above to test the API</pre>
+
+        <h2>ℹ️ Instructions</h2>
+        <div class="info">
+            <p><strong>If you're in GitHub Codespaces:</strong></p>
+            <ol>
+                <li>Look at the <strong>PORTS</strong> tab at the bottom of VS Code</li>
+                <li>Find port <strong>8000</strong></li>
+                <li>Right-click on port 8000 → Select <strong>"Open in Browser"</strong></li>
+                <li>Add <code>/docs</code> to the URL to access the Swagger UI</li>
+            </ol>
+            
+            <p><strong>Or use this file:</strong></p>
+            <ul>
+                <li>Open this HTML file in VS Code</li>
+                <li>Right-click → <strong>"Open with Live Server"</strong></li>
+                <li>Or simply click the "Test Connection" button above</li>
+            </ul>
+        </div>
+
+        <h2>🎯 Available Endpoints</h2>
+        <div class="info">
+            <h3>Authentication</h3>
+            <ul>
+                <li><code>POST /register</code> - Register new user</li>
+                <li><code>POST /token</code> - Login and get JWT token</li>
+            </ul>
+
+            <h3>Input Features (Data Collection)</h3>
+            <ul>
+                <li><code>GET/PUT /profile</code> - User profile</li>
+                <li><code>POST/GET /goals</code> - Goals tracking</li>
+                <li><code>POST/GET /habits</code> - Habit logging</li>
+                <li><code>POST/GET /productivity</code> - Productivity tracking</li>
+                <li><code>POST/GET /mood</code> - Mood logging</li>
+            </ul>
+
+            <h3>AI Capabilities</h3>
+            <ul>
+                <li><code>GET /ai/profile-analysis</code> - User profiling</li>
+                <li><code>GET /ai/recommendations</code> - Personalized recommendations</li>
+                <li><code>GET /ai/predict-routine</code> - Routine prediction</li>
+                <li><code>GET /ai/habit-analytics</code> - Habit analytics</li>
+                <li><code>POST /ai/chat</code> - AI chatbot</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function testConnection() {
+            const responseEl = document.getElementById('response');
+            const statusEl = document.getElementById('status');
+            
+            try {
+                statusEl.className = 'status info';
+                statusEl.textContent = '⏳ Testing connection...';
+                
+                const response = await fetch(`${API_URL}/`);
+                const data = await response.json();
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ Server is running successfully!';
+                
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Connection failed. Make sure the server is running on port 8000.';
+                responseEl.textContent = `Error: ${error.message}\n\nTroubleshooting:\n1. Check if server is running: ps aux | grep uvicorn\n2. In Codespaces, check the PORTS tab\n3. Try opening http://localhost:8000/docs in a new tab`;
+            }
+        }
+
+        async function getFeatures() {
+            const responseEl = document.getElementById('response');
+            
+            try {
+                const response = await fetch(`${API_URL}/`);
+                const data = await response.json();
+                
+                let output = '🎯 AVAILABLE FEATURES:\n\n';
+                output += '1️⃣ INPUT FEATURES (Data Collection):\n';
+                data.features.input_features.forEach(f => output += `   ✓ ${f}\n`);
+                output += '\n2️⃣ AI CAPABILITIES:\n';
+                data.features.ai_capabilities.forEach(f => output += `   ✓ ${f}\n`);
+                
+                responseEl.textContent = output;
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function registerUser() {
+            const responseEl = document.getElementById('response');
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'testuser_' + Date.now(),
+                        password: 'testpass123'
+                    })
+                });
+                
+                const data = await response.json();
+                responseEl.textContent = '✅ User registered successfully!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Test connection on page load
+        window.onload = testConnection;
+    </script>
+</body>
+</html>
