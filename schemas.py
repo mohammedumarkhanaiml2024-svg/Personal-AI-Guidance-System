@@ -272,3 +272,81 @@ class HabitAnalytics(BaseModel):
     streaks: dict  # habit -> streak_days
     insights: List[str]
     visualizations_data: Optional[dict] = None
+
+
+# ===== Personal Information Schemas (For User Brain) =====
+class PersonalInfoCreate(BaseModel):
+    """Personal information collected during registration and stored in user's brain file"""
+    full_name: Optional[str] = Field(None, description="User's full name")
+    age: Optional[int] = Field(None, ge=13, le=120, description="User's age")
+    gender: Optional[str] = Field(None, description="Gender: male, female, other, prefer not to say")
+    occupation: Optional[str] = Field(None, description="Current occupation or profession")
+    location: Optional[str] = Field(None, description="City/Country")
+    timezone: Optional[str] = Field(None, description="User's timezone (e.g., UTC+5:30, America/New_York)")
+    
+    # Life Goals & Interests
+    primary_goals: Optional[List[str]] = Field(default_factory=list, description="Main life goals")
+    interests: Optional[List[str]] = Field(default_factory=list, description="Hobbies and interests")
+    challenges: Optional[List[str]] = Field(default_factory=list, description="Current challenges or struggles")
+    
+    # Preferences
+    preferred_communication_style: Optional[str] = Field(None, description="formal, casual, motivational, direct")
+    motivation_type: Optional[str] = Field(None, description="achievement, growth, social, purpose")
+    work_style: Optional[str] = Field(None, description="structured, flexible, creative, analytical")
+    
+    # Background
+    education_level: Optional[str] = Field(None, description="High school, Bachelor's, Master's, PhD, etc.")
+    relationship_status: Optional[str] = Field(None, description="single, married, in relationship, etc.")
+    has_children: Optional[bool] = Field(None, description="Whether user has children")
+    
+    # Additional context
+    why_using_app: Optional[str] = Field(None, description="Why user is using this app")
+    custom_notes: Optional[str] = Field(None, description="Any additional information user wants to share")
+
+class PersonalInfoUpdate(BaseModel):
+    """Update personal information in user's brain file"""
+    full_name: Optional[str] = None
+    age: Optional[int] = Field(None, ge=13, le=120)
+    gender: Optional[str] = None
+    occupation: Optional[str] = None
+    location: Optional[str] = None
+    timezone: Optional[str] = None
+    primary_goals: Optional[List[str]] = None
+    interests: Optional[List[str]] = None
+    challenges: Optional[List[str]] = None
+    preferred_communication_style: Optional[str] = None
+    motivation_type: Optional[str] = None
+    work_style: Optional[str] = None
+    education_level: Optional[str] = None
+    relationship_status: Optional[str] = None
+    has_children: Optional[bool] = None
+    why_using_app: Optional[str] = None
+    custom_notes: Optional[str] = None
+
+class PersonalInfoOut(BaseModel):
+    """Return personal information from user's brain file"""
+    full_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    occupation: Optional[str] = None
+    location: Optional[str] = None
+    timezone: Optional[str] = None
+    primary_goals: List[str] = []
+    interests: List[str] = []
+    challenges: List[str] = []
+    preferred_communication_style: Optional[str] = None
+    motivation_type: Optional[str] = None
+    work_style: Optional[str] = None
+    education_level: Optional[str] = None
+    relationship_status: Optional[str] = None
+    has_children: Optional[bool] = None
+    why_using_app: Optional[str] = None
+    custom_notes: Optional[str] = None
+    collected_at: Optional[str] = None
+    last_updated: Optional[str] = None
+
+class UserRegistrationWithInfo(BaseModel):
+    """Extended registration schema with personal information"""
+    username: str
+    password: str
+    personal_info: Optional[PersonalInfoCreate] = None

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+        .step-indicator.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.1);
+        }
+        .step-indicator.completed {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+    </style>
+</head>
+<body class="dark-gradient min-h-screen text-white" x-data="registrationApp()" x-init="init()">
+    
+    <div class="relative z-10 max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in">
+            <div class="inline-block mb-4 animate-float">
+                <div class="text-6xl">🚀</div>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black mb-2 gradient-text neon-glow">
+                Create Your Account
+            </h1>
+            <p class="text-lg text-gray-400">
+                Let's personalize your AI guidance experience
+            </p>
+        </div>
+
+        <!-- Step Indicators -->
+        <div class="flex justify-center mb-8 space-x-4">
+            <template x-for="i in 3" :key="i">
+                <div class="flex items-center">
+                    <div 
+                        class="step-indicator w-10 h-10 rounded-full flex items-center justify-center font-bold"
+                        :class="{
+                            'active': currentStep === i,
+                            'completed': currentStep > i,
+                            'bg-gray-700': currentStep < i
+                        }"
+                        x-text="i"
+                    ></div>
+                    <div x-show="i < 3" class="w-12 h-1 bg-gray-700 mx-2"></div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="glow-card rounded-3xl p-8 max-w-2xl mx-auto">
+            
+            <!-- Error Message -->
+            <div x-show="errorMessage" class="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-xl">
+                <p class="text-red-300" x-text="errorMessage"></p>
+            </div>
+
+            <!-- Success Message -->
+            <div x-show="successMessage" class="mb-6 p-4 bg-green-500/20 border border-green-500 rounded-xl">
+                <p class="text-green-300" x-text="successMessage"></p>
+            </div>
+
+            <form @submit.prevent="handleSubmit()">
+                
+                <!-- Step 1: Account Credentials -->
+                <div x-show="currentStep === 1" x-cloak>
+                    <h2 class="text-2xl font-bold mb-6 gradient-text">Step 1: Account Details</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Username *</label>
+                            <input 
+                                type="text" 
+                                x-model="formData.username"
+                                class="form-input w-full"
+                                placeholder="Choose a username"
+                                required
+                            />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Password *</label>
+                            <input 
+                                type="password" 
+                                x-model="formData.password"
+                                class="form-input w-full"
+                                placeholder="Create a strong password"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Confirm Password *</label>
+                            <input 
+                                type="password" 
+                                x-model="confirmPassword"
+                                class="form-input w-full"
+                                placeholder="Confirm your password"
+                                required
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Personal Information -->
+                <div x-show="currentStep === 2" x-cloak>
+                    <h2 class="text-2xl font-bold mb-6 gradient-text">Step 2: About You</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Full Name</label>
+                            <input 
+                                type="text" 
+                                x-model="formData.personal_info.full_name"
+                                class="form-input w-full"
+                                placeholder="Your full name"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-400 mb-2">Age</label>
+                                <input 
+                                    type="number" 
+                                    x-model.number="formData.personal_info.age"
+                                    class="form-input w-full"
+                                    placeholder="Your age"
+                                    min="13"
+                                    max="120"
+                                />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-400 mb-2">Gender</label>
+                                <select x-model="formData.personal_info.gender" class="form-input w-full">
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer_not_to_say">Prefer not to say</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Occupation</label>
+                            <input 
+                                type="text" 
+                                x-model="formData.personal_info.occupation"
+                                class="form-input w-full"
+                                placeholder="e.g., Student, Engineer, Teacher"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-400 mb-2">Location</label>
+                                <input 
+                                    type="text" 
+                                    x-model="formData.personal_info.location"
+                                    class="form-input w-full"
+                                    placeholder="City, Country"
+                                />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-400 mb-2">Timezone</label>
+                                <input 
+                                    type="text" 
+                                    x-model="formData.personal_info.timezone"
+                                    class="form-input w-full"
+                                    placeholder="e.g., UTC+5:30"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Education Level</label>
+                            <select x-model="formData.personal_info.education_level" class="form-input w-full">
+                                <option value="">Select...</option>
+                                <option value="high_school">High School</option>
+                                <option value="bachelors">Bachelor's Degree</option>
+                                <option value="masters">Master's Degree</option>
+                                <option value="phd">PhD</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Goals & Preferences -->
+                <div x-show="currentStep === 3" x-cloak>
+                    <h2 class="text-2xl font-bold mb-6 gradient-text">Step 3: Your Goals & Preferences</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Primary Goals (comma-separated)</label>
+                            <textarea 
+                                x-model="goalsText"
+                                class="form-input w-full h-20 resize-none"
+                                placeholder="e.g., Improve fitness, Learn new skills, Better work-life balance"
+                            ></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Separate multiple goals with commas</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Interests & Hobbies (comma-separated)</label>
+                            <textarea 
+                                x-model="interestsText"
+                                class="form-input w-full h-20 resize-none"
+                                placeholder="e.g., Reading, Coding, Yoga, Photography"
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Current Challenges (comma-separated)</label>
+                            <textarea 
+                                x-model="challengesText"
+                                class="form-input w-full h-20 resize-none"
+                                placeholder="e.g., Time management, Procrastination, Stress"
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Preferred Communication Style</label>
+                            <select x-model="formData.personal_info.preferred_communication_style" class="form-input w-full">
+                                <option value="">Select...</option>
+                                <option value="formal">Formal & Professional</option>
+                                <option value="casual">Casual & Friendly</option>
+                                <option value="motivational">Motivational & Inspiring</option>
+                                <option value="direct">Direct & Concise</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">What Motivates You?</label>
+                            <select x-model="formData.personal_info.motivation_type" class="form-input w-full">
+                                <option value="">Select...</option>
+                                <option value="achievement">Achievement & Success</option>
+                                <option value="growth">Personal Growth</option>
+                                <option value="social">Social Impact</option>
+                                <option value="purpose">Purpose & Meaning</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Work Style</label>
+                            <select x-model="formData.personal_info.work_style" class="form-input w-full">
+                                <option value="">Select...</option>
+                                <option value="structured">Structured & Planned</option>
+                                <option value="flexible">Flexible & Adaptive</option>
+                                <option value="creative">Creative & Spontaneous</option>
+                                <option value="analytical">Analytical & Data-driven</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-2">Why are you using this app?</label>
+                            <textarea 
+                                x-model="formData.personal_info.why_using_app"
+                                class="form-input w-full h-24 resize-none"
+                                placeholder="Tell us what you hope to achieve with this app..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between mt-8">
+                    <button 
+                        type="button"
+                        @click="prevStep()"
+                        x-show="currentStep > 1"
+                        class="btn-secondary px-6 py-3"
+                    >
+                        ← Previous
+                    </button>
+
+                    <div class="ml-auto flex space-x-4">
+                        <a href="/" class="btn-secondary px-6 py-3">
+                            Cancel
+                        </a>
+
+                        <button 
+                            type="button"
+                            @click="nextStep()"
+                            x-show="currentStep < 3"
+                            class="btn-primary px-6 py-3"
+                        >
+                            Next →
+                        </button>
+
+                        <button 
+                            type="submit"
+                            x-show="currentStep === 3"
+                            :disabled="isSubmitting"
+                            class="btn-primary px-6 py-3"
+                            :class="{'opacity-50 cursor-not-allowed': isSubmitting}"
+                        >
+                            <span x-show="!isSubmitting">Create Account 🚀</span>
+                            <span x-show="isSubmitting">Creating...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Skip Personal Info Option -->
+                <div class="text-center mt-4" x-show="currentStep > 1">
+                    <button 
+                        type="button"
+                        @click="skipPersonalInfo()"
+                        class="text-gray-400 hover:text-white text-sm underline"
+                    >
+                        Skip personal information for now
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Already have an account -->
+            <div class="text-center mt-6 pt-6 border-t border-gray-700">
+                <p class="text-gray-400">
+                    Already have an account? 
+                    <a href="/" class="text-purple-400 hover:text-purple-300 font-semibold">
+                        Login here
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function registrationApp() {
+            return {
+                currentStep: 1,
+                isSubmitting: false,
+                errorMessage: '',
+                successMessage: '',
+                confirmPassword: '',
+                goalsText: '',
+                interestsText: '',
+                challengesText: '',
+                formData: {
+                    username: '',
+                    password: '',
+                    personal_info: {
+                        full_name: null,
+                        age: null,
+                        gender: null,
+                        occupation: null,
+                        location: null,
+                        timezone: null,
+                        primary_goals: [],
+                        interests: [],
+                        challenges: [],
+                        preferred_communication_style: null,
+                        motivation_type: null,
+                        work_style: null,
+                        education_level: null,
+                        relationship_status: null,
+                        has_children: null,
+                        why_using_app: null,
+                        custom_notes: null
+                    }
+                },
+
+                init() {
+                    console.log('Registration app initialized');
+                },
+
+                nextStep() {
+                    this.errorMessage = '';
+                    
+                    if (this.currentStep === 1) {
+                        // Validate step 1
+                        if (!this.formData.username || !this.formData.password) {
+                            this.errorMessage = 'Please fill in all required fields';
+                            return;
+                        }
+                        if (this.formData.password !== this.confirmPassword) {
+                            this.errorMessage = 'Passwords do not match';
+                            return;
+                        }
+                        if (this.formData.password.length < 6) {
+                            this.errorMessage = 'Password must be at least 6 characters';
+                            return;
+                        }
+                    }
+
+                    if (this.currentStep < 3) {
+                        this.currentStep++;
+                    }
+                },
+
+                prevStep() {
+                    if (this.currentStep > 1) {
+                        this.currentStep--;
+                        this.errorMessage = '';
+                    }
+                },
+
+                skipPersonalInfo() {
+                    // Clear personal info and submit
+                    this.formData.personal_info = null;
+                    this.handleSubmit();
+                },
+
+                async handleSubmit() {
+                    this.errorMessage = '';
+                    this.isSubmitting = true;
+
+                    // Parse comma-separated fields
+                    if (this.goalsText.trim()) {
+                        this.formData.personal_info.primary_goals = this.goalsText.split(',').map(g => g.trim()).filter(g => g);
+                    }
+                    if (this.interestsText.trim()) {
+                        this.formData.personal_info.interests = this.interestsText.split(',').map(i => i.trim()).filter(i => i);
+                    }
+                    if (this.challengesText.trim()) {
+                        this.formData.personal_info.challenges = this.challengesText.split(',').map(c => c.trim()).filter(c => c);
+                    }
+
+                    // Remove null/empty values from personal_info
+                    if (this.formData.personal_info) {
+                        Object.keys(this.formData.personal_info).forEach(key => {
+                            if (this.formData.personal_info[key] === null || 
+                                this.formData.personal_info[key] === '' ||
+                                (Array.isArray(this.formData.personal_info[key]) && this.formData.personal_info[key].length === 0)) {
+                                delete this.formData.personal_info[key];
+                            }
+                        });
+
+                        // If personal_info is empty, set to null
+                        if (Object.keys(this.formData.personal_info).length === 0) {
+                            this.formData.personal_info = null;
+                        }
+                    }
+
+                    try {
+                        // Construct API base URL for Codespaces or local environment
+                        let API_BASE;
+                        if (window.location.hostname.includes('app.github.dev')) {
+                            // GitHub Codespaces environment
+                            API_BASE = window.location.origin.replace('-8080.app.github.dev', '-8000.app.github.dev');
+                        } else {
+                            // Local environment
+                            API_BASE = window.location.origin.replace(':8080', ':8000');
+                        }
+                        
+                        console.log('API_BASE:', API_BASE);
+                        
+                        const response = await fetch(`${API_BASE}/register`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(this.formData)
+                        });
+
+                        if (!response.ok) {
+                            const contentType = response.headers.get('content-type');
+                            if (contentType && contentType.includes('application/json')) {
+                                const data = await response.json();
+                                throw new Error(data.detail || 'Registration failed');
+                            } else {
+                                throw new Error(`Registration failed with status ${response.status}`);
+                            }
+                        }
+
+                        const data = await response.json();
+
+                        this.successMessage = '✅ Account created successfully! Redirecting to login...';
+                        
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        this.errorMessage = error.message || 'Registration failed. Please try again.';
+                        this.isSubmitting = false;
+                    }
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

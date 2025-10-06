@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+</head>
+<body>
+    <h1>Login API Test</h1>
+    <div id="info"></div>
+    <hr>
+    <h2>Register</h2>
+    <input type="text" id="reg_username" placeholder="Username" value="test_user_new">
+    <input type="password" id="reg_password" placeholder="Password" value="password123">
+    <button onclick="testRegister()">Register</button>
+    <div id="register_result"></div>
+    
+    <hr>
+    <h2>Login</h2>
+    <input type="text" id="login_username" placeholder="Username" value="demo_login_test">
+    <input type="password" id="login_password" placeholder="Password" value="password123">
+    <button onclick="testLogin()">Login</button>
+    <div id="login_result"></div>
+    
+    <script>
+        // Detect API URL
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : window.location.protocol + '//' + window.location.hostname.replace('-8080', '-8000');
+        
+        document.getElementById('info').innerHTML = `
+            <p><strong>Current URL:</strong> ${window.location.href}</p>
+            <p><strong>Hostname:</strong> ${window.location.hostname}</p>
+            <p><strong>API URL:</strong> ${API_URL}</p>
+        `;
+        
+        async function testRegister() {
+            const username = document.getElementById('reg_username').value;
+            const password = document.getElementById('reg_password').value;
+            const resultDiv = document.getElementById('register_result');
+            
+            try {
+                resultDiv.innerHTML = 'Registering...';
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testLogin() {
+            const username = document.getElementById('login_username').value;
+            const password = document.getElementById('login_password').value;
+            const resultDiv = document.getElementById('login_result');
+            
+            try {
+                resultDiv.innerHTML = 'Logging in...';
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch(`${API_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerHTML = `<pre style="color: green">${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<pre style="color: red">${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

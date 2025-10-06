@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="dark-gradient min-h-screen text-white overflow-x-hidden" x-data="analyticsApp()" x-init="init()">
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div id="header"></div>
+        
+        <!-- Navigation -->
+        <div id="navigation"></div>
+        
+        <!-- Analytics Content -->
+        <div class="space-y-6 animate-fade-in">
+            
+            <!-- Page Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-5xl font-black gradient-text neon-glow mb-4">
+                    📈 Analytics Dashboard
+                </h1>
+                <p class="text-xl text-gray-400">
+                    Discover insights and patterns in your daily habits and mood
+                </p>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-4xl font-black text-purple-400" x-text="stats.avgSleep + 'h'"></div>
+                    <div class="text-gray-400 font-bold mt-2">Avg Sleep</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-4xl font-black text-blue-400" x-text="stats.completionRate + '%'"></div>
+                    <div class="text-gray-400 font-bold mt-2">Task Completion</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-4xl font-black text-green-400" x-text="stats.avgHappiness + '/10'"></div>
+                    <div class="text-gray-400 font-bold mt-2">Avg Happiness</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-4xl font-black text-pink-400" x-text="stats.totalEntries"></div>
+                    <div class="text-gray-400 font-bold mt-2">Days Tracked</div>
+                </div>
+            </div>
+
+            <!-- Detailed Analytics -->
+            <div id="analyticsContent" x-show="!loading">
+                <!-- Content will be loaded here -->
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" class="text-center py-12">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-400 text-lg">Loading your analytics...</p>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Sleep & Exercise Chart -->
+                <div class="glow-card rounded-3xl p-8 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-black gradient-text">😴 Sleep & Exercise</h3>
+                            <div class="px-4 py-2 bg-purple-900/50 rounded-full text-purple-400 text-sm font-bold">
+                                Last 30 Days
+                            </div>
+                        </div>
+                        <div class="bg-black/30 rounded-2xl p-4 border border-purple-900/30">
+                            <canvas id="sleepExerciseChart" class="w-full h-64"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productivity Chart -->
+                <div class="glow-card rounded-3xl p-8 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-black gradient-text">📊 Productivity</h3>
+                            <div class="px-4 py-2 bg-blue-900/50 rounded-full text-blue-400 text-sm font-bold">
+                                Tasks Flow
+                            </div>
+                        </div>
+                        <div class="bg-black/30 rounded-2xl p-4 border border-blue-900/30">
+                            <canvas id="productivityChart" class="w-full h-64"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mood Chart -->
+                <div class="glow-card rounded-3xl p-8 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-pink-600/10 to-rose-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-black gradient-text">😊 Mood Trends</h3>
+                            <div class="px-4 py-2 bg-pink-900/50 rounded-full text-pink-400 text-sm font-bold">
+                                Emotional State
+                            </div>
+                        </div>
+                        <div class="bg-black/30 rounded-2xl p-4 border border-pink-900/30">
+                            <canvas id="moodChart" class="w-full h-64"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Habits Chart -->
+                <div class="glow-card rounded-3xl p-8 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-600/10 to-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-black gradient-text">📚 Habits</h3>
+                            <div class="px-4 py-2 bg-green-900/50 rounded-full text-green-400 text-sm font-bold">
+                                Distribution
+                            </div>
+                        </div>
+                        <div class="bg-black/30 rounded-2xl p-4 border border-green-900/30">
+                            <canvas id="habitsChart" class="w-full h-64"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script>
+        function analyticsApp() {
+            return {
+                loading: true,
+                stats: {
+                    avgSleep: '--',
+                    completionRate: '--',
+                    avgHappiness: '--',
+                    totalEntries: '--'
+                },
+                charts: {},
+                
+                async init() {
+                    if (!requireAuth()) return;
+                    
+                    document.getElementById('header').innerHTML = createHeader(aiApp.currentUser);
+                    document.getElementById('navigation').innerHTML = createNavigation('analytics');
+                    
+                    await this.loadAnalytics();
+                    await this.loadCharts();
+                },
+                
+                async loadAnalytics() {
+                    try {
+                        const data = await aiApp.loadChartData();
+                        const { habits, productivity, mood } = data;
+                        
+                        // Calculate quick stats
+                        this.stats.avgSleep = habits.length > 0 
+                            ? aiApp.formatNumber(aiApp.calculateAverage(habits, 'sleep_hours')) 
+                            : '0';
+                        
+                        const totalPlanned = aiApp.calculateTotal(productivity, 'tasks_planned');
+                        const totalCompleted = aiApp.calculateTotal(productivity, 'tasks_completed');
+                        this.stats.completionRate = totalPlanned > 0 
+                            ? Math.round((totalCompleted / totalPlanned) * 100) 
+                            : '0';
+                        
+                        this.stats.avgHappiness = mood.length > 0 
+                            ? aiApp.formatNumber(aiApp.calculateAverage(mood, 'happiness_level')) 
+                            : '0';
+                        
+                        this.stats.totalEntries = Math.max(habits.length, productivity.length, mood.length);
+                        
+                        // Generate detailed analytics
+                        this.generateDetailedAnalytics(data);
+                        
+                    } catch (error) {
+                        console.error('Error loading analytics:', error);
+                        aiApp.showError('analyticsContent', 'Failed to load analytics data');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                generateDetailedAnalytics(data) {
+                    const { habits, productivity, mood } = data;
+                    
+                    const avgExercise = habits.length > 0 ? Math.round(aiApp.calculateAverage(habits, 'exercise_minutes')) : 0;
+                    const avgReading = habits.length > 0 ? Math.round(aiApp.calculateAverage(habits, 'reading_minutes')) : 0;
+                    const avgMeditation = habits.length > 0 ? Math.round(aiApp.calculateAverage(habits, 'meditation_minutes')) : 0;
+                    const avgStress = mood.length > 0 ? aiApp.formatNumber(aiApp.calculateAverage(mood, 'stress_level')) : 0;
+                    const avgEnergy = mood.length > 0 ? aiApp.formatNumber(aiApp.calculateAverage(mood, 'energy_level')) : 0;
+                    
+                    document.getElementById('analyticsContent').innerHTML = `
+                        <div class="space-y-8">
+                            <!-- Sleep & Exercise Stats -->
+                            <div>
+                                <h4 class="text-2xl font-black gradient-text mb-4 flex items-center">
+                                    <span class="text-3xl mr-3">😴</span> Sleep & Exercise
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-purple-900/30 rounded-2xl p-6 border-2 border-purple-500/50">
+                                        <div class="text-5xl font-black text-purple-400">${this.stats.avgSleep}h</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Sleep/Night</div>
+                                    </div>
+                                    <div class="bg-pink-900/30 rounded-2xl p-6 border-2 border-pink-500/50">
+                                        <div class="text-5xl font-black text-pink-400">${avgExercise}m</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Exercise/Day</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Productivity Stats -->
+                            <div>
+                                <h4 class="text-2xl font-black gradient-text mb-4 flex items-center">
+                                    <span class="text-3xl mr-3">📋</span> Productivity
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-blue-900/30 rounded-2xl p-6 border-2 border-blue-500/50">
+                                        <div class="text-5xl font-black text-blue-400">${aiApp.calculateTotal(productivity, 'tasks_planned')}</div>
+                                        <div class="text-gray-400 font-bold mt-2">Tasks Planned</div>
+                                    </div>
+                                    <div class="bg-green-900/30 rounded-2xl p-6 border-2 border-green-500/50">
+                                        <div class="text-5xl font-black text-green-400">${aiApp.calculateTotal(productivity, 'tasks_completed')}</div>
+                                        <div class="text-gray-400 font-bold mt-2">Tasks Completed</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-blue-900/30 to-green-900/30 rounded-2xl p-6 border-2 border-cyan-500/50">
+                                        <div class="text-5xl font-black text-cyan-400">${this.stats.completionRate}%</div>
+                                        <div class="text-gray-400 font-bold mt-2">Completion Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mood Stats -->
+                            <div>
+                                <h4 class="text-2xl font-black gradient-text mb-4 flex items-center">
+                                    <span class="text-3xl mr-3">😊</span> Emotional State
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-green-900/30 rounded-2xl p-6 border-2 border-green-500/50">
+                                        <div class="text-5xl font-black text-green-400">${this.stats.avgHappiness}/10</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Happiness</div>
+                                    </div>
+                                    <div class="bg-red-900/30 rounded-2xl p-6 border-2 border-red-500/50">
+                                        <div class="text-5xl font-black text-red-400">${avgStress}/10</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Stress</div>
+                                    </div>
+                                    <div class="bg-yellow-900/30 rounded-2xl p-6 border-2 border-yellow-500/50">
+                                        <div class="text-5xl font-black text-yellow-400">${avgEnergy}/10</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Energy</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Habits Stats -->
+                            <div>
+                                <h4 class="text-2xl font-black gradient-text mb-4 flex items-center">
+                                    <span class="text-3xl mr-3">📚</span> Daily Habits
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-purple-900/30 rounded-2xl p-6 border-2 border-purple-500/50">
+                                        <div class="text-5xl font-black text-purple-400">${avgReading}m</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Reading/Day</div>
+                                    </div>
+                                    <div class="bg-emerald-900/30 rounded-2xl p-6 border-2 border-emerald-500/50">
+                                        <div class="text-5xl font-black text-emerald-400">${avgMeditation}m</div>
+                                        <div class="text-gray-400 font-bold mt-2">Avg Meditation/Day</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Insights -->
+                            <div class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-2xl p-6 border-2 border-purple-500/30">
+                                <h4 class="font-black text-xl gradient-text mb-4">💡 Quick Insights:</h4>
+                                <ul class="space-y-2 text-gray-300">
+                                    <li class="flex items-start">
+                                        <span class="text-xl mr-2">✅</span>
+                                        <span>You've tracked data for <strong class="text-purple-400">${this.stats.totalEntries} days</strong></span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-xl mr-2">${parseFloat(this.stats.avgSleep) >= 7 ? '🌟' : '⚠️'}</span>
+                                        <span>Sleep: ${parseFloat(this.stats.avgSleep) >= 7 ? 'Great! Keep it up!' : 'Try to aim for 7+ hours'}</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-xl mr-2">${this.stats.completionRate >= 70 ? '🎯' : '📈'}</span>
+                                        <span>Productivity: ${this.stats.completionRate >= 70 ? 'Excellent completion rate!' : 'Room for improvement'}</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-xl mr-2">${parseFloat(this.stats.avgHappiness) >= 7 ? '😊' : '🌱'}</span>
+                                        <span>Mood: ${parseFloat(this.stats.avgHappiness) >= 7 ? 'You\'re feeling great!' : 'Focus on self-care activities'}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                },
+                
+                async loadCharts() {
+                    try {
+                        const data = await aiApp.loadChartData();
+                        aiApp.setupChartDefaults();
+                        this.createCharts(data);
+                    } catch (error) {
+                        console.error('Error loading charts:', error);
+                    }
+                },
+                
+                createCharts(data) {
+                    const { habits, productivity, mood } = data;
+                    
+                    // Sleep & Exercise Chart
+                    if (this.charts.sleepExercise) this.charts.sleepExercise.destroy();
+                    this.charts.sleepExercise = new Chart(document.getElementById('sleepExerciseChart'), {
+                        type: 'line',
+                        data: {
+                            labels: habits.map(h => aiApp.formatDate(h.date)).reverse(),
+                            datasets: [
+                                {
+                                    label: '😴 Sleep Hours',
+                                    data: habits.map(h => h.sleep_hours).reverse(),
+                                    borderColor: '#8b5cf6',
+                                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                    borderWidth: 3,
+                                    tension: 0.4,
+                                    fill: true
+                                },
+                                {
+                                    label: '🏃 Exercise (min)',
+                                    data: habits.map(h => h.exercise_minutes).reverse(),
+                                    borderColor: '#ec4899',
+                                    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+                                    borderWidth: 3,
+                                    tension: 0.4,
+                                    fill: true,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: { display: true, text: 'Hours', color: '#8b5cf6' },
+                                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                                    ticks: { color: '#8b5cf6' }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: { display: true, text: 'Minutes', color: '#ec4899' },
+                                    grid: { drawOnChartArea: false },
+                                    ticks: { color: '#ec4899' }
+                                },
+                                x: {
+                                    grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                                    ticks: { color: '#9ca3af' }
+                                }
+                            }
+                        }
+                    });
+
+                    // Productivity Chart
+                    if (this.charts.productivity) this.charts.productivity.destroy();
+                    this.charts.productivity = new Chart(document.getElementById('productivityChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: productivity.map(p => aiApp.formatDate(p.date)).reverse(),
+                            datasets: [
+                                {
+                                    label: '📋 Tasks Planned',
+                                    data: productivity.map(p => p.tasks_planned).reverse(),
+                                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                    borderColor: '#3b82f6',
+                                    borderWidth: 2
+                                },
+                                {
+                                    label: '✅ Tasks Completed',
+                                    data: productivity.map(p => p.tasks_completed).reverse(),
+                                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                    borderColor: '#10b981',
+                                    borderWidth: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(59, 130, 246, 0.1)' },
+                                    ticks: { color: '#3b82f6' }
+                                },
+                                x: {
+                                    grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                                    ticks: { color: '#9ca3af' }
+                                }
+                            }
+                        }
+                    });
+
+                    // Mood Chart
+                    if (this.charts.mood) this.charts.mood.destroy();
+                    this.charts.mood = new Chart(document.getElementById('moodChart'), {
+                        type: 'line',
+                        data: {
+                            labels: mood.map(m => aiApp.formatDate(m.timestamp)).reverse(),
+                            datasets: [
+                                {
+                                    label: '😊 Happiness',
+                                    data: mood.map(m => m.happiness_level).reverse(),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                    borderWidth: 3,
+                                    tension: 0.4,
+                                    fill: true
+                                },
+                                {
+                                    label: '😰 Stress',
+                                    data: mood.map(m => m.stress_level).reverse(),
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    borderWidth: 3,
+                                    tension: 0.4,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 10,
+                                    grid: { color: 'rgba(236, 72, 153, 0.1)' },
+                                    ticks: { color: '#ec4899' }
+                                },
+                                x: {
+                                    grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                                    ticks: { color: '#9ca3af' }
+                                }
+                            }
+                        }
+                    });
+
+                    // Habits Doughnut Chart
+                    const avgHabits = {
+                        reading: habits.length > 0 ? aiApp.calculateAverage(habits, 'reading_minutes') : 0,
+                        meditation: habits.length > 0 ? aiApp.calculateAverage(habits, 'meditation_minutes') : 0,
+                        socialMedia: habits.length > 0 ? aiApp.calculateAverage(habits, 'social_media_minutes') : 0
+                    };
+
+                    if (this.charts.habits) this.charts.habits.destroy();
+                    this.charts.habits = new Chart(document.getElementById('habitsChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['📚 Reading', '🧘 Meditation', '📱 Social Media'],
+                            datasets: [{
+                                data: [avgHabits.reading, avgHabits.meditation, avgHabits.socialMedia],
+                                backgroundColor: [
+                                    'rgba(139, 92, 246, 0.8)',
+                                    'rgba(16, 185, 129, 0.8)',
+                                    'rgba(245, 158, 11, 0.8)'
+                                ],
+                                borderColor: ['#8b5cf6', '#10b981', '#f59e0b'],
+                                borderWidth: 3,
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    labels: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

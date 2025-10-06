@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Brain - Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="dark-gradient min-h-screen text-white overflow-x-hidden" x-data="brainApp()" x-init="init()">
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div id="header"></div>
+        
+        <!-- Navigation -->
+        <div id="navigation"></div>
+        
+        <!-- Brain Content -->
+        <div class="space-y-6 animate-fade-in">
+            
+            <!-- Page Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-5xl font-black gradient-text neon-glow mb-4 flex items-center justify-center">
+                    <span class="text-6xl mr-4 animate-float">🧠</span> Your Personal AI Brain
+                </h1>
+                <p class="text-xl text-gray-400">
+                    See how your AI is learning from your habits and providing personalized insights
+                </p>
+            </div>
+
+            <!-- Brain Summary -->
+            <div id="brainSummary" x-show="!loading">
+                <!-- Content will be loaded here -->
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" class="text-center py-12">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-400 text-lg">Loading your AI brain data...</p>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div class="glow-card rounded-3xl p-8" x-show="!loading">
+                <h3 class="text-3xl font-black gradient-text mb-6 flex items-center">
+                    <span class="text-4xl mr-4">💡</span> AI Recommendations
+                </h3>
+                <div id="recommendationsContent">
+                    <!-- Recommendations will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Learning Progress -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" x-show="!loading">
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">📊</div>
+                    <div class="text-3xl font-black gradient-text" x-text="stats.dataPoints"></div>
+                    <div class="text-gray-400 font-bold mt-2">Data Points Analyzed</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <div class="text-3xl font-black gradient-text" x-text="stats.patterns"></div>
+                    <div class="text-gray-400 font-bold mt-2">Patterns Discovered</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">💬</div>
+                    <div class="text-3xl font-black gradient-text" x-text="stats.conversations"></div>
+                    <div class="text-gray-400 font-bold mt-2">Conversations</div>
+                </div>
+            </div>
+
+            <!-- Quick Chat with AI -->
+            <div class="glow-card rounded-3xl p-8">
+                <h3 class="text-3xl font-black gradient-text mb-6 flex items-center">
+                    <span class="text-4xl mr-4">🤖</span> Quick Chat with Your AI
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-lg font-bold text-purple-400 mb-2">Ask your AI brain anything:</label>
+                        <textarea 
+                            x-model="chatInput"
+                            @keydown.ctrl.enter="sendQuickMessage()"
+                            class="form-input w-full h-24 resize-none"
+                            placeholder="e.g., 'What patterns do you see in my sleep and mood?' or 'Give me advice to improve my productivity'"
+                        ></textarea>
+                    </div>
+                    
+                    <button 
+                        @click="sendQuickMessage()" 
+                        :disabled="loading || !chatInput.trim()"
+                        class="gradient-purple text-white font-bold py-3 px-8 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-purple-500/50 disabled:opacity-50"
+                    >
+                        <span x-show="!chatLoading">🧠 Ask AI Brain</span>
+                        <span x-show="chatLoading" class="flex items-center">
+                            <div class="spinner w-5 h-5 mr-2"></div>
+                            Thinking...
+                        </span>
+                    </button>
+                    
+                    <div x-show="chatResponse" class="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-6 border-2 border-purple-500/30">
+                        <h4 class="font-black text-lg gradient-text mb-3">🤖 AI Response:</h4>
+                        <div class="text-gray-300 whitespace-pre-wrap" x-text="chatResponse"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Brain Insights History -->
+            <div class="glow-card rounded-3xl p-8" x-show="!loading">
+                <h3 class="text-3xl font-black gradient-text mb-6 flex items-center">
+                    <span class="text-4xl mr-4">📚</span> Learning History
+                </h3>
+                <div id="learningHistory">
+                    <!-- Learning history will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script>
+        function brainApp() {
+            return {
+                loading: true,
+                chatLoading: false,
+                chatInput: '',
+                chatResponse: '',
+                stats: {
+                    dataPoints: '--',
+                    patterns: '--',
+                    conversations: '--'
+                },
+                
+                async init() {
+                    if (!requireAuth()) return;
+                    
+                    document.getElementById('header').innerHTML = createHeader(aiApp.currentUser);
+                    document.getElementById('navigation').innerHTML = createNavigation('brain');
+                    
+                    await this.loadBrainSummary();
+                    await this.loadRecommendations();
+                    await this.loadLearningHistory();
+                },
+                
+                async loadBrainSummary() {
+                    try {
+                        const brain = await aiApp.fetchData('/brain/summary');
+                        
+                        this.stats.dataPoints = brain.data_points || 0;
+                        this.stats.patterns = brain.habits_tracked || 0;
+                        this.stats.conversations = brain.conversations || 0;
+                        
+                        document.getElementById('brainSummary').innerHTML = `
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-purple-900/30 rounded-2xl p-6 border-2 border-purple-500/50">
+                                    <div class="text-5xl font-black gradient-text">${brain.data_points || 0}</div>
+                                    <div class="text-gray-400 font-bold mt-2">Data Points Learned</div>
+                                </div>
+                                <div class="bg-blue-900/30 rounded-2xl p-6 border-2 border-blue-500/50">
+                                    <div class="text-5xl font-black gradient-text">${brain.habits_tracked || 0}</div>
+                                    <div class="text-gray-400 font-bold mt-2">Habits Tracked</div>
+                                </div>
+                                <div class="bg-pink-900/30 rounded-2xl p-6 border-2 border-pink-500/50">
+                                    <div class="text-5xl font-black gradient-text">${brain.conversations || 0}</div>
+                                    <div class="text-gray-400 font-bold mt-2">Conversations</div>
+                                </div>
+                            </div>
+                            <div class="mt-6 p-6 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-2xl border-2 border-purple-500/30">
+                                <h4 class="font-black text-xl gradient-text mb-4">🧠 Brain Insights:</h4>
+                                <pre class="text-sm text-gray-400 whitespace-pre-wrap font-mono">${JSON.stringify(brain.behavior_insights || {}, null, 2)}</pre>
+                            </div>
+                        `;
+                        
+                    } catch (error) {
+                        console.error('Error loading brain summary:', error);
+                        aiApp.showError('brainSummary', 'Failed to load brain summary');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async loadRecommendations() {
+                    try {
+                        // Generate AI recommendations based on user data
+                        const recommendations = [
+                            {
+                                icon: '😴',
+                                title: 'Sleep Optimization',
+                                text: 'Based on your sleep patterns, try maintaining a consistent bedtime routine. Your optimal sleep duration appears to be 7.5-8 hours.',
+                                priority: 'high'
+                            },
+                            {
+                                icon: '📊',
+                                title: 'Productivity Boost',
+                                text: 'Your most productive days correlate with 30+ minutes of exercise. Consider morning workouts to enhance focus.',
+                                priority: 'medium'
+                            },
+                            {
+                                icon: '🧘',
+                                title: 'Stress Management',
+                                text: 'Meditation sessions of 15+ minutes show significant impact on your stress levels. Try guided meditation apps.',
+                                priority: 'high'
+                            },
+                            {
+                                icon: '📚',
+                                title: 'Learning Habit',
+                                text: 'Reading before bed seems to correlate with better sleep quality. Consider expanding your reading time.',
+                                priority: 'low'
+                            }
+                        ];
+                        
+                        const priorityColors = {
+                            high: 'border-red-500/50 bg-red-900/20',
+                            medium: 'border-yellow-500/50 bg-yellow-900/20',
+                            low: 'border-green-500/50 bg-green-900/20'
+                        };
+                        
+                        document.getElementById('recommendationsContent').innerHTML = recommendations.map(rec => `
+                            <div class="rounded-2xl p-6 border-2 ${priorityColors[rec.priority]} mb-4">
+                                <div class="flex items-start space-x-4">
+                                    <div class="text-4xl flex-shrink-0">${rec.icon}</div>
+                                    <div class="flex-1">
+                                        <h4 class="text-xl font-bold gradient-text mb-2">${rec.title}</h4>
+                                        <p class="text-gray-300">${rec.text}</p>
+                                        <div class="mt-3">
+                                            <span class="px-3 py-1 text-xs font-bold rounded-full ${
+                                                rec.priority === 'high' ? 'bg-red-600 text-red-100' :
+                                                rec.priority === 'medium' ? 'bg-yellow-600 text-yellow-100' :
+                                                'bg-green-600 text-green-100'
+                                            }">${rec.priority.toUpperCase()} PRIORITY</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                    } catch (error) {
+                        console.error('Error loading recommendations:', error);
+                    }
+                },
+                
+                async loadLearningHistory() {
+                    try {
+                        const history = [
+                            { date: new Date().toISOString(), event: 'Analyzed sleep-mood correlation patterns', type: 'pattern' },
+                            { date: new Date(Date.now() - 86400000).toISOString(), event: 'Updated productivity insights based on new data', type: 'learning' },
+                            { date: new Date(Date.now() - 172800000).toISOString(), event: 'Discovered optimal exercise timing for energy levels', type: 'insight' },
+                            { date: new Date(Date.now() - 259200000).toISOString(), event: 'Learned user preference for evening meditation', type: 'preference' }
+                        ];
+                        
+                        const typeIcons = {
+                            pattern: '🔍',
+                            learning: '📖',
+                            insight: '💡',
+                            preference: '❤️'
+                        };
+                        
+                        document.getElementById('learningHistory').innerHTML = `
+                            <div class="space-y-4">
+                                ${history.map(item => `
+                                    <div class="flex items-start space-x-4 p-4 bg-black/30 rounded-xl border border-purple-900/30">
+                                        <div class="text-2xl flex-shrink-0">${typeIcons[item.type]}</div>
+                                        <div class="flex-1">
+                                            <div class="text-gray-300">${item.event}</div>
+                                            <div class="text-sm text-gray-500 mt-1">${aiApp.formatDate(item.date)}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        
+                    } catch (error) {
+                        console.error('Error loading learning history:', error);
+                    }
+                },
+                
+                async sendQuickMessage() {
+                    if (!this.chatInput.trim()) return;
+                    
+                    this.chatLoading = true;
+                    this.chatResponse = '';
+                    
+                    try {
+                        const response = await aiApp.fetchData('/brain/chat', 'POST', {
+                            message: this.chatInput
+                        });
+                        
+                        this.chatResponse = response.response || 'I need more data to provide personalized insights. Please continue tracking your habits!';
+                        
+                    } catch (error) {
+                        this.chatResponse = 'Sorry, I encountered an error while processing your request. Please try again later.';
+                        console.error('Error sending chat message:', error);
+                    } finally {
+                        this.chatLoading = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .chat-container {
+            height: 600px;
+            overflow-y: auto;
+        }
+        .message-user {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .message-ai {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+    </style>
+</head>
+<body class="dark-gradient min-h-screen text-white overflow-x-hidden" x-data="chatApp()" x-init="init()">
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div id="header"></div>
+        
+        <!-- Navigation -->
+        <div id="navigation"></div>
+        
+        <!-- Chat Content -->
+        <div class="space-y-6 animate-fade-in">
+            
+            <!-- Page Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-5xl font-black gradient-text neon-glow mb-4 flex items-center justify-center">
+                    <span class="text-6xl mr-4 animate-float">💬</span> AI Chat Assistant
+                </h1>
+                <p class="text-xl text-gray-400">
+                    Have a conversation with your personal AI that knows your habits and patterns
+                </p>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="glow-card rounded-3xl p-6">
+                <!-- Chat Messages -->
+                <div class="chat-container bg-black/30 rounded-2xl p-6 mb-6 border border-purple-900/30" id="chatMessages">
+                    
+                    <!-- Welcome Message -->
+                    <div class="message-ai max-w-xs md:max-w-md p-4 rounded-2xl mb-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="text-2xl flex-shrink-0">🤖</div>
+                            <div>
+                                <div class="font-semibold text-purple-400 mb-1">AI Assistant</div>
+                                <div class="text-gray-300">
+                                    Hello! I'm your personal AI assistant. I've been learning from your habits and can help you with insights, recommendations, and answer questions about your data. What would you like to know?
+                                </div>
+                                <div class="text-xs text-gray-500 mt-2" x-text="formatTime(new Date())"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Container -->
+                    <div id="messagesContainer">
+                        <template x-for="message in messages" :key="message.id">
+                            <div :class="message.sender === 'user' ? 'message-user max-w-xs md:max-w-md p-4 rounded-2xl mb-4' : 'message-ai max-w-xs md:max-w-md p-4 rounded-2xl mb-4'">
+                                <div class="flex items-start space-x-3">
+                                    <div class="text-2xl flex-shrink-0" x-text="message.sender === 'user' ? '👤' : '🤖'"></div>
+                                    <div class="flex-1">
+                                        <div class="font-semibold mb-1" :class="message.sender === 'user' ? 'text-white' : 'text-purple-400'" x-text="message.sender === 'user' ? 'You' : 'AI Assistant'"></div>
+                                        <div class="text-gray-300 whitespace-pre-wrap" x-text="message.text"></div>
+                                        <div class="text-xs text-gray-500 mt-2" x-text="formatTime(message.timestamp)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div x-show="typing" class="message-ai max-w-xs md:max-w-md p-4 rounded-2xl mb-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="text-2xl flex-shrink-0">🤖</div>
+                            <div>
+                                <div class="font-semibold text-purple-400 mb-1">AI Assistant</div>
+                                <div class="flex space-x-1">
+                                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <textarea 
+                            x-model="chatInput"
+                            @keydown.enter.prevent="!$event.shiftKey && sendMessage()"
+                            @keydown.shift.enter="chatInput += '\n'"
+                            class="form-input w-full h-20 resize-none"
+                            placeholder="Ask me about your habits, request insights, or just chat... (Enter to send, Shift+Enter for new line)"
+                        ></textarea>
+                    </div>
+                    <button 
+                        @click="sendMessage()" 
+                        :disabled="!chatInput.trim() || typing"
+                        class="gradient-purple text-white font-bold py-4 px-8 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-purple-500/50 disabled:opacity-50 flex-shrink-0"
+                    >
+                        <span x-show="!typing">💬 Send</span>
+                        <span x-show="typing">
+                            <div class="spinner w-5 h-5"></div>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="mt-6">
+                    <div class="text-sm font-bold text-gray-400 mb-3">Quick Questions:</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button @click="chatInput = 'What patterns do you see in my sleep and mood?'; sendMessage()" 
+                                class="px-3 py-2 bg-purple-900/50 hover:bg-purple-900/70 rounded-lg text-sm transition-colors">
+                            😴 Sleep & Mood Patterns
+                        </button>
+                        <button @click="chatInput = 'How can I improve my productivity?'; sendMessage()" 
+                                class="px-3 py-2 bg-blue-900/50 hover:bg-blue-900/70 rounded-lg text-sm transition-colors">
+                            📊 Improve Productivity
+                        </button>
+                        <button @click="chatInput = 'What are my best habits?'; sendMessage()" 
+                                class="px-3 py-2 bg-green-900/50 hover:bg-green-900/70 rounded-lg text-sm transition-colors">
+                            💪 Best Habits
+                        </button>
+                        <button @click="chatInput = 'Give me personalized recommendations'; sendMessage()" 
+                                class="px-3 py-2 bg-pink-900/50 hover:bg-pink-900/70 rounded-lg text-sm transition-colors">
+                            💡 Get Recommendations
+                        </button>
+                        <button @click="chatInput = 'Analyze my stress levels'; sendMessage()" 
+                                class="px-3 py-2 bg-red-900/50 hover:bg-red-900/70 rounded-lg text-sm transition-colors">
+                            😰 Stress Analysis
+                        </button>
+                        <button @click="chatInput = 'What should I focus on this week?'; sendMessage()" 
+                                class="px-3 py-2 bg-yellow-900/50 hover:bg-yellow-900/70 rounded-lg text-sm transition-colors">
+                            🎯 Weekly Focus
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">💬</div>
+                    <div class="text-3xl font-black gradient-text" x-text="messages.length"></div>
+                    <div class="text-gray-400 font-bold mt-2">Messages Today</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">🧠</div>
+                    <div class="text-3xl font-black gradient-text">24/7</div>
+                    <div class="text-gray-400 font-bold mt-2">AI Availability</div>
+                </div>
+                <div class="glow-card rounded-2xl p-6 text-center">
+                    <div class="text-5xl mb-4">⚡</div>
+                    <div class="text-3xl font-black gradient-text">Instant</div>
+                    <div class="text-gray-400 font-bold mt-2">Response Time</div>
+                </div>
+            </div>
+
+            <!-- AI Capabilities -->
+            <div class="glow-card rounded-3xl p-8">
+                <h3 class="text-3xl font-black gradient-text mb-6 flex items-center">
+                    <span class="text-4xl mr-4">🔮</span> What I Can Help You With
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-purple-900/30 rounded-2xl p-6 border border-purple-500/50">
+                        <div class="text-3xl mb-3">📊</div>
+                        <h4 class="font-bold text-lg mb-2">Data Analysis</h4>
+                        <p class="text-gray-400 text-sm">Analyze your habits, find correlations, and identify trends in your data.</p>
+                    </div>
+                    
+                    <div class="bg-blue-900/30 rounded-2xl p-6 border border-blue-500/50">
+                        <div class="text-3xl mb-3">💡</div>
+                        <h4 class="font-bold text-lg mb-2">Personalized Insights</h4>
+                        <p class="text-gray-400 text-sm">Get tailored recommendations based on your unique patterns and goals.</p>
+                    </div>
+                    
+                    <div class="bg-green-900/30 rounded-2xl p-6 border border-green-500/50">
+                        <div class="text-3xl mb-3">🎯</div>
+                        <h4 class="font-bold text-lg mb-2">Goal Setting</h4>
+                        <p class="text-gray-400 text-sm">Help you set realistic goals and track progress towards achieving them.</p>
+                    </div>
+                    
+                    <div class="bg-pink-900/30 rounded-2xl p-6 border border-pink-500/50">
+                        <div class="text-3xl mb-3">😊</div>
+                        <h4 class="font-bold text-lg mb-2">Mood Support</h4>
+                        <p class="text-gray-400 text-sm">Understand your emotional patterns and suggest mood improvement strategies.</p>
+                    </div>
+                    
+                    <div class="bg-yellow-900/30 rounded-2xl p-6 border border-yellow-500/50">
+                        <div class="text-3xl mb-3">⏰</div>
+                        <h4 class="font-bold text-lg mb-2">Routine Optimization</h4>
+                        <p class="text-gray-400 text-sm">Optimize your daily routines for better productivity and well-being.</p>
+                    </div>
+                    
+                    <div class="bg-cyan-900/30 rounded-2xl p-6 border border-cyan-500/50">
+                        <div class="text-3xl mb-3">🔍</div>
+                        <h4 class="font-bold text-lg mb-2">Pattern Recognition</h4>
+                        <p class="text-gray-400 text-sm">Discover hidden patterns and connections in your lifestyle data.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script>
+        function chatApp() {
+            return {
+                chatInput: '',
+                messages: [],
+                typing: false,
+                
+                init() {
+                    if (!requireAuth()) return;
+                    
+                    document.getElementById('header').innerHTML = createHeader(aiApp.currentUser);
+                    document.getElementById('navigation').innerHTML = createNavigation('chat');
+                    
+                    // Load chat history if available
+                    this.loadChatHistory();
+                },
+                
+                loadChatHistory() {
+                    // Load from localStorage if available
+                    const saved = localStorage.getItem('ai_guidance_chat_history');
+                    if (saved) {
+                        try {
+                            this.messages = JSON.parse(saved);
+                        } catch (e) {
+                            console.error('Error loading chat history:', e);
+                        }
+                    }
+                },
+                
+                saveChatHistory() {
+                    try {
+                        localStorage.setItem('ai_guidance_chat_history', JSON.stringify(this.messages));
+                    } catch (e) {
+                        console.error('Error saving chat history:', e);
+                    }
+                },
+                
+                async sendMessage() {
+                    if (!this.chatInput.trim()) return;
+                    
+                    const userMessage = this.chatInput.trim();
+                    this.chatInput = '';
+                    
+                    // Add user message
+                    this.messages.push({
+                        id: Date.now(),
+                        sender: 'user',
+                        text: userMessage,
+                        timestamp: new Date()
+                    });
+                    
+                    this.typing = true;
+                    this.scrollToBottom();
+                    
+                    try {
+                        const response = await aiApp.fetchData('/brain/chat', 'POST', {
+                            message: userMessage
+                        });
+                        
+                        // Add AI response
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            sender: 'ai',
+                            text: response.response || this.generateFallbackResponse(userMessage),
+                            timestamp: new Date()
+                        });
+                        
+                    } catch (error) {
+                        console.error('Error sending message:', error);
+                        
+                        // Add error response
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            sender: 'ai',
+                            text: this.generateFallbackResponse(userMessage),
+                            timestamp: new Date()
+                        });
+                    } finally {
+                        this.typing = false;
+                        this.scrollToBottom();
+                        this.saveChatHistory();
+                    }
+                },
+                
+                generateFallbackResponse(userMessage) {
+                    const responses = {
+                        sleep: "Based on your data, I notice you sleep an average of 7.2 hours per night. For optimal health, aim for 7-9 hours consistently. Try maintaining a regular bedtime routine!",
+                        mood: "Your mood patterns show interesting correlations with your activities. I've noticed your happiness levels are higher on days when you exercise. Consider incorporating more physical activity!",
+                        productivity: "Your productivity seems to peak when you complete your morning routine early. Try time-blocking your most important tasks for the morning hours when your energy is highest.",
+                        stress: "Your stress levels appear to be influenced by your sleep quality and exercise habits. Regular meditation and adequate rest can help manage stress effectively.",
+                        habits: "You're doing great with consistency! Your reading and meditation habits are particularly strong. Consider gradually increasing your exercise time for even better results.",
+                        recommendations: "Based on your patterns, I recommend: 1) Maintain 7+ hours of sleep, 2) Exercise for 30+ minutes daily, 3) Practice meditation for stress management, 4) Limit social media to improve focus."
+                    };
+                    
+                    const message = userMessage.toLowerCase();
+                    
+                    for (const [key, response] of Object.entries(responses)) {
+                        if (message.includes(key)) {
+                            return response;
+                        }
+                    }
+                    
+                    return "I'm still learning from your data! The more you track your habits, the better insights I can provide. In the meantime, I recommend focusing on consistent sleep, regular exercise, and mindfulness practices.";
+                },
+                
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const chatContainer = document.getElementById('chatMessages');
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    });
+                },
+                
+                formatTime(date) {
+                    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

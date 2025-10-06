@@ -1,0 +1,23 @@
+
+# Build artifacts
+dist/
+build/
+*.tar
+*.tar.gz
+
+# Logs
+*.log
+startup_output.log
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# User data
+private_user_data/
+user_brains/
+
+# Python cache
+__pycache__/
+*.pyc

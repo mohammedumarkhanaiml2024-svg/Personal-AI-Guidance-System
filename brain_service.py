@@ -1,6 +1,7 @@
 """
 Personal Brain Service - Individual AI Learning System
 Each user has their own private brain file that learns and adapts from their data only.
+Enhanced with complete data isolation and privacy protection.
 """
 
 import os
@@ -9,54 +10,30 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 import models
+from private_data_store import PrivateDataStore
 
 class PersonalBrainService:
-    """Manages individual user brain files for personalized AI responses"""
-    
-    BRAIN_DIR = "user_brains"
+    """
+    Manages individual user brain files for personalized AI responses
+    Now with enhanced privacy and complete data isolation
+    """
     
     def __init__(self):
-        # Create brain directory if it doesn't exist
-        os.makedirs(self.BRAIN_DIR, exist_ok=True)
-    
-    def _get_brain_path(self, user_id: int) -> str:
-        """Get the file path for a user's brain file"""
-        return os.path.join(self.BRAIN_DIR, f"user_{user_id}_brain.json")
+        # Use the new private data store system
+        self.private_store = PrivateDataStore()
+        
+        # Legacy brain directory for migration
+        self.legacy_brain_dir = "user_brains"
+        if os.path.exists(self.legacy_brain_dir):
+            print("Legacy brain directory detected - consider migrating to private store")
     
     def get_user_brain(self, user_id: int) -> Dict:
-        """Load user's brain file or create new one if doesn't exist"""
-        brain_path = self._get_brain_path(user_id)
-        
-        if os.path.exists(brain_path):
-            with open(brain_path, 'r') as f:
-                return json.load(f)
-        else:
-            # Create new brain for user
-            new_brain = {
-                "user_id": user_id,
-                "created_at": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat(),
-                "learning_history": [],
-                "personality_insights": {},
-                "behavior_patterns": {},
-                "preferences": {},
-                "goals_progress": {},
-                "habit_memory": {},
-                "conversation_context": [],
-                "achievements": [],
-                "challenges": [],
-                "growth_areas": []
-            }
-            self._save_brain(user_id, new_brain)
-            return new_brain
+        """Load user's private brain file with enhanced isolation"""
+        return self.private_store.get_user_brain(user_id)
     
     def _save_brain(self, user_id: int, brain_data: Dict):
-        """Save user's brain file"""
-        brain_path = self._get_brain_path(user_id)
-        brain_data["last_updated"] = datetime.now().isoformat()
-        
-        with open(brain_path, 'w') as f:
-            json.dump(brain_data, f, indent=2)
+        """Save user's brain file with validation and security"""
+        self.private_store.save_user_brain(user_id, brain_data)
     
     def update_brain_with_habit(self, user_id: int, habit_data: Dict):
         """Update brain with new habit data"""

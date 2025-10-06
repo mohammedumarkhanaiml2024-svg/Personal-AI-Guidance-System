@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Debug</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Login Debug Information</h1>
+        
+        <div class="bg-gray-800 p-4 rounded mb-4">
+            <h2 class="font-bold mb-2">URL Information:</h2>
+            <p>Current URL: <span id="currentUrl"></span></p>
+            <p>Hostname: <span id="hostname"></span></p>
+            <p>Protocol: <span id="protocol"></span></p>
+            <p>Port: <span id="port"></span></p>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded mb-4">
+            <h2 class="font-bold mb-2">Computed API URL:</h2>
+            <p id="apiUrl" class="text-yellow-400"></p>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded mb-4">
+            <h2 class="font-bold mb-2">Test Login:</h2>
+            <input type="text" id="username" placeholder="Username" class="bg-gray-700 p-2 rounded mr-2 text-white">
+            <input type="password" id="password" placeholder="Password" class="bg-gray-700 p-2 rounded mr-2 text-white">
+            <button onclick="testLogin()" class="bg-blue-600 px-4 py-2 rounded">Test Login</button>
+        </div>
+        
+        <div id="result" class="bg-gray-800 p-4 rounded"></div>
+    </div>
+
+    <script>
+        // Display URL info
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('hostname').textContent = window.location.hostname;
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('port').textContent = window.location.port;
+        
+        // Compute API URL using same logic as shared.js
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : window.location.protocol + '//' + window.location.hostname.replace('-8080', '-8000');
+        
+        document.getElementById('apiUrl').textContent = API_URL;
+        
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p class="text-yellow-400">Testing login...</p>';
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch(`${API_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="text-green-400 font-bold">✅ Login Successful!</p>
+                        <p class="mt-2">Token: ${data.access_token.substring(0, 50)}...</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="text-red-400 font-bold">❌ Login Failed</p>
+                        <p class="mt-2">Error: ${data.detail}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="text-red-400 font-bold">❌ Network Error</p>
+                    <p class="mt-2">Error: ${error.message}</p>
+                    <p class="mt-2 text-sm">This usually means the API URL is incorrect or CORS is blocking the request.</p>
+                `;
+            }
+        }
+        
+        // Pre-fill demo credentials
+        document.getElementById('username').value = 'demo_login_test';
+        document.getElementById('password').value = 'password123';
+    </script>
+</body>
+</html>

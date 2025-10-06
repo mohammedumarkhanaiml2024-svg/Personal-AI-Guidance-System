@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-guidance-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./app.db
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      - ./private_user_data:/app/private_user_data
+      - ./user_brains:/app/user_brains
+      - ./app.db:/app/app.db
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ai-guidance-network
+
+  # Frontend Server (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: ai-guidance-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./:/usr/share/nginx/html/:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - ai-guidance-network
+
+networks:
+  ai-guidance-network:
+    driver: bridge
+
+volumes:
+  private_user_data:
+  user_brains:
+  logs:

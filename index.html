@@ -2,14 +2,210 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=dashboard_dark.html">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body style="background: #000; color: #8b5cf6; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
-    <div style="text-align: center;">
-        <div style="font-size: 4rem; margin-bottom: 1rem;">🤖</div>
-        <p style="font-size: 1.5rem;">Redirecting to dark dashboard...</p>
-        <a href="dashboard_dark.html" style="color: #ec4899; text-decoration: none; font-weight: bold;">Click here if not redirected</a>
+<body class="dark-gradient min-h-screen text-white overflow-x-hidden" x-data="authApp()" x-init="init()">
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div x-show="!isAuthenticated" class="text-center mb-12 animate-fade-in">
+            <div class="inline-block mb-6 animate-float">
+                <div class="text-8xl">🤖</div>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black mb-4 gradient-text neon-glow">
+                Personal AI Guidance System
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-400 font-medium">
+                Track, Analyze, and Improve Your Life with AI-Powered Insights 🧠
+            </p>
+        </div>
+
+        <!-- Auth Section -->
+        <div x-show="!isAuthenticated" class="max-w-md mx-auto animate-slide-in">
+            <div class="glow-card rounded-3xl p-8">
+                <h2 class="text-3xl font-bold text-center mb-8 gradient-text">
+                    Welcome Back!
+                </h2>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-400 mb-2">Username</label>
+                        <input 
+                            type="text" 
+                            x-model="credentials.username"
+                            @keyup.enter="login()"
+                            class="form-input w-full"
+                            placeholder="Enter your username"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-400 mb-2">Password</label>
+                        <input 
+                            type="password" 
+                            x-model="credentials.password"
+                            @keyup.enter="login()"
+                            class="form-input w-full"
+                            placeholder="Enter your password"
+                        />
+                    </div>
+                    
+                    <div class="flex gap-4 pt-4">
+                        <button 
+                            @click="login()"
+                            :disabled="loading"
+                            class="flex-1 gradient-purple text-white font-bold py-4 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-purple-500/50 disabled:opacity-50"
+                        >
+                            <span x-show="!loading">🔐 Login</span>
+                            <span x-show="loading" class="flex items-center justify-center">
+                                <div class="spinner w-5 h-5 mr-2"></div>
+                                Logging in...
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <!-- Create Account Link -->
+                    <div class="text-center mt-6 pt-6 border-t border-gray-700">
+                        <p class="text-gray-400 mb-3">
+                            Don't have an account?
+                        </p>
+                        <a 
+                            href="/register.html"
+                            class="inline-block w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-purple-500/50"
+                        >
+                            ✨ Create New Account
+                        </a>
+                    </div>
+                    
+                    <!-- Quick Demo Login -->
+                    <div class="text-center mt-6">
+                        <p class="text-gray-500 text-sm mb-2">Quick Demo</p>
+                        <button 
+                            @click="quickLogin()"
+                            class="text-purple-400 hover:text-purple-300 text-sm font-semibold underline transition-colors"
+                        >
+                            👉 Login as Khan_umar (existing user)
+                        </button>
+                    </div>
+                    
+                    <div x-show="authMessage" 
+                         x-text="authMessage"
+                         :class="authError ? 'bg-red-900/30 text-red-400 border-red-500' : 'bg-green-900/30 text-green-400 border-green-500'"
+                         class="p-4 rounded-xl border-2 text-center font-semibold animate-fade-in"
+                    ></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div x-show="loading && isAuthenticated" class="text-center py-20">
+            <div class="spinner mx-auto mb-6"></div>
+            <h2 class="text-2xl font-bold gradient-text mb-2">Setting up your dashboard...</h2>
+            <p class="text-gray-400">Please wait while we prepare your AI-powered experience</p>
+        </div>
     </div>
+
+    <script src="/shared.js"></script>
+    <script>
+        function authApp() {
+            return {
+                isAuthenticated: false,
+                loading: false,
+                authMessage: '',
+                authError: false,
+                credentials: {
+                    username: '',
+                    password: ''
+                },
+                
+                init() {
+                    // Check if user is already authenticated
+                    if (aiApp.checkAuth()) {
+                        this.isAuthenticated = true;
+                        this.redirectToOverview();
+                    }
+                },
+                
+                async login() {
+                    if (!this.credentials.username.trim() || !this.credentials.password.trim()) {
+                        this.showMessage('Please enter both username and password', true);
+                        return;
+                    }
+                    
+                    this.loading = true;
+                    this.authMessage = '';
+                    
+                    try {
+                        const result = await aiApp.login(this.credentials.username, this.credentials.password);
+                        
+                        if (result.success) {
+                            this.isAuthenticated = true;
+                            this.authMessage = result.message;
+                            this.authError = false;
+                            
+                            // Redirect to overview after short delay
+                            setTimeout(() => {
+                                this.redirectToOverview();
+                            }, 1000);
+                        } else {
+                            this.showMessage(result.message, true);
+                        }
+                    } catch (error) {
+                        this.showMessage(`Error: ${error.message}`, true);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async register() {
+                    if (!this.credentials.username.trim() || !this.credentials.password.trim()) {
+                        this.showMessage('Please enter both username and password', true);
+                        return;
+                    }
+                    
+                    this.loading = true;
+                    this.authMessage = '';
+                    
+                    try {
+                        const result = await aiApp.register(this.credentials.username, this.credentials.password);
+                        this.showMessage(result.message, !result.success);
+                        
+                        if (result.success) {
+                            // Clear password field after successful registration
+                            this.credentials.password = '';
+                        }
+                    } catch (error) {
+                        this.showMessage(`Error: ${error.message}`, true);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                quickLogin() {
+                    this.credentials.username = 'Khan_umar';
+                    this.credentials.password = 'test123';
+                    this.login();
+                },
+                
+                showMessage(message, isError = false) {
+                    this.authMessage = message;
+                    this.authError = isError;
+                },
+                
+                redirectToOverview() {
+                    window.location.href = '/overview.html';
+                }
+            }
+        }
+    </script>
 </body>
 </html>

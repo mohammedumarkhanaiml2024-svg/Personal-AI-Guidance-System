@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test aiApp Loading</title>
+    <script src="/shared.js"></script>
+</head>
+<body>
+    <h1>Testing aiApp Global Variable</h1>
+    <div id="result"></div>
+    
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        if (typeof window.aiApp !== 'undefined') {
+            resultDiv.innerHTML = `
+                <p style="color: green; font-weight: bold;">✅ SUCCESS: aiApp is defined!</p>
+                <p><strong>API URL:</strong> ${aiApp.API_URL}</p>
+                <p><strong>Is Authenticated:</strong> ${aiApp.isAuthenticated}</p>
+                <p><strong>Current User:</strong> ${aiApp.currentUser || 'None'}</p>
+                <p><strong>Methods available:</strong> ${Object.getOwnPropertyNames(Object.getPrototypeOf(aiApp)).join(', ')}</p>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <p style="color: red; font-weight: bold;">❌ ERROR: aiApp is NOT defined!</p>
+                <p>Window object keys: ${Object.keys(window).slice(0, 20).join(', ')}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

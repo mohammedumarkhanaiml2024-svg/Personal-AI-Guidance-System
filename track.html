@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track - Personal AI Guidance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="dark-gradient min-h-screen text-white overflow-x-hidden" x-data="trackApp()" x-init="init()">
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div id="header"></div>
+        
+        <!-- Navigation -->
+        <div id="navigation"></div>
+        
+        <!-- Track Content -->
+        <div class="space-y-6 animate-fade-in">
+            
+            <!-- Page Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-5xl font-black gradient-text neon-glow mb-4">
+                    📝 Track Your Day
+                </h1>
+                <p class="text-xl text-gray-400">
+                    Log your habits, productivity, and mood to help your AI brain learn
+                </p>
+            </div>
+
+            <!-- Habits Tracking -->
+            <div class="glow-card rounded-3xl p-8">
+                <h3 class="text-3xl font-black gradient-text mb-8 flex items-center">
+                    <span class="text-5xl mr-4 animate-float">💪</span> Daily Habits
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-lg font-bold text-purple-400 mb-2">😴 Sleep Hours</label>
+                        <input 
+                            type="number" 
+                            x-model="habitLog.sleep_hours"
+                            min="0" 
+                            max="24" 
+                            step="0.5"
+                            class="form-input w-full"
+                            placeholder="e.g., 7.5"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-pink-400 mb-2">🏃 Exercise (minutes)</label>
+                        <input 
+                            type="number" 
+                            x-model="habitLog.exercise_minutes"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 30"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-blue-400 mb-2">📚 Reading (minutes)</label>
+                        <input 
+                            type="number" 
+                            x-model="habitLog.reading_minutes"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 45"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-green-400 mb-2">🧘 Meditation (minutes)</label>
+                        <input 
+                            type="number" 
+                            x-model="habitLog.meditation_minutes"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 15"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-yellow-400 mb-2">📱 Social Media (minutes)</label>
+                        <input 
+                            type="number" 
+                            x-model="habitLog.social_media_minutes"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 60"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-cyan-400 mb-2">📅 Date</label>
+                        <input 
+                            type="date" 
+                            x-model="habitLog.date"
+                            class="form-input w-full"
+                        />
+                    </div>
+                </div>
+                
+                <button 
+                    @click="saveHabits()" 
+                    :disabled="loading"
+                    class="mt-6 gradient-purple text-white font-bold py-4 px-10 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-purple-500/50 disabled:opacity-50"
+                >
+                    <span x-show="!loading">💪 Save Habits</span>
+                    <span x-show="loading" class="flex items-center">
+                        <div class="spinner w-5 h-5 mr-2"></div>
+                        Saving...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Productivity Tracking -->
+            <div class="glow-card rounded-3xl p-8">
+                <h3 class="text-3xl font-black gradient-text mb-8 flex items-center">
+                    <span class="text-5xl mr-4 animate-float">📊</span> Productivity
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-lg font-bold text-blue-400 mb-2">📋 Tasks Planned</label>
+                        <input 
+                            type="number" 
+                            x-model="productivityLog.tasks_planned"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 8"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-green-400 mb-2">✅ Tasks Completed</label>
+                        <input 
+                            type="number" 
+                            x-model="productivityLog.tasks_completed"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 6"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-purple-400 mb-2">⏱️ Focus Time (minutes)</label>
+                        <input 
+                            type="number" 
+                            x-model="productivityLog.focus_time_minutes"
+                            min="0" 
+                            class="form-input w-full"
+                            placeholder="e.g., 240"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-yellow-400 mb-2">📅 Date</label>
+                        <input 
+                            type="date" 
+                            x-model="productivityLog.date"
+                            class="form-input w-full"
+                        />
+                    </div>
+                </div>
+                
+                <button 
+                    @click="saveProductivity()" 
+                    :disabled="loading"
+                    class="mt-6 gradient-blue text-white font-bold py-4 px-10 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-blue-500/50 disabled:opacity-50"
+                >
+                    <span x-show="!loading">📊 Save Productivity</span>
+                    <span x-show="loading" class="flex items-center">
+                        <div class="spinner w-5 h-5 mr-2"></div>
+                        Saving...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Mood Tracking -->
+            <div class="glow-card rounded-3xl p-8">
+                <h3 class="text-3xl font-black gradient-text mb-8 flex items-center">
+                    <span class="text-5xl mr-4 animate-float">😊</span> Mood Tracking
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div>
+                        <label class="block text-lg font-bold text-green-400 mb-4">😊 Happiness (1-10)</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-400">1</span>
+                            <input 
+                                type="range" 
+                                x-model="moodLog.happiness_level"
+                                min="1" 
+                                max="10" 
+                                class="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-green"
+                            />
+                            <span class="text-gray-400">10</span>
+                            <div class="text-2xl font-bold text-green-400 w-8" x-text="moodLog.happiness_level"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-red-400 mb-4">😰 Stress (1-10)</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-400">1</span>
+                            <input 
+                                type="range" 
+                                x-model="moodLog.stress_level"
+                                min="1" 
+                                max="10" 
+                                class="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-red"
+                            />
+                            <span class="text-gray-400">10</span>
+                            <div class="text-2xl font-bold text-red-400 w-8" x-text="moodLog.stress_level"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-yellow-400 mb-4">⚡ Energy (1-10)</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-400">1</span>
+                            <input 
+                                type="range" 
+                                x-model="moodLog.energy_level"
+                                min="1" 
+                                max="10" 
+                                class="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow"
+                            />
+                            <span class="text-gray-400">10</span>
+                            <div class="text-2xl font-bold text-yellow-400 w-8" x-text="moodLog.energy_level"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-purple-400 mb-4">💪 Motivation (1-10)</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-400">1</span>
+                            <input 
+                                type="range" 
+                                x-model="moodLog.motivation_level"
+                                min="1" 
+                                max="10" 
+                                class="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-purple"
+                            />
+                            <span class="text-gray-400">10</span>
+                            <div class="text-2xl font-bold text-purple-400 w-8" x-text="moodLog.motivation_level"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-bold text-orange-400 mb-4">😟 Anxiety (1-10)</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-400">1</span>
+                            <input 
+                                type="range" 
+                                x-model="moodLog.anxiety_level"
+                                min="1" 
+                                max="10" 
+                                class="flex-1 h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-orange"
+                            />
+                            <span class="text-gray-400">10</span>
+                            <div class="text-2xl font-bold text-orange-400 w-8" x-text="moodLog.anxiety_level"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button 
+                    @click="saveMood()" 
+                    :disabled="loading"
+                    class="mt-6 gradient-pink text-white font-bold py-4 px-10 rounded-xl hover:opacity-90 transform hover:scale-105 transition-all shadow-lg shadow-pink-500/50 disabled:opacity-50"
+                >
+                    <span x-show="!loading">😊 Save Mood</span>
+                    <span x-show="loading" class="flex items-center">
+                        <div class="spinner w-5 h-5 mr-2"></div>
+                        Saving...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <div x-show="message" 
+                 x-text="message"
+                 :class="error ? 'bg-red-900/30 text-red-400 border-red-500' : 'bg-green-900/30 text-green-400 border-green-500'"
+                 class="glow-card rounded-2xl p-4 text-center font-semibold animate-fade-in border-2"
+            ></div>
+        </div>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script>
+        function trackApp() {
+            return {
+                loading: false,
+                message: '',
+                error: false,
+                
+                habitLog: {
+                    date: new Date().toISOString().split('T')[0],
+                    sleep_hours: null,
+                    exercise_minutes: 0,
+                    reading_minutes: 0,
+                    meditation_minutes: 0,
+                    social_media_minutes: 0
+                },
+                
+                productivityLog: {
+                    date: new Date().toISOString().split('T')[0],
+                    tasks_planned: 0,
+                    tasks_completed: 0,
+                    focus_time_minutes: 0,
+                    productivity_score: null
+                },
+                
+                moodLog: {
+                    stress_level: 5,
+                    happiness_level: 5,
+                    energy_level: 5,
+                    motivation_level: 5,
+                    anxiety_level: 5
+                },
+                
+                init() {
+                    if (!requireAuth()) return;
+                    
+                    document.getElementById('header').innerHTML = createHeader(aiApp.currentUser);
+                    document.getElementById('navigation').innerHTML = createNavigation('track');
+                },
+                
+                async saveHabits() {
+                    this.loading = true;
+                    this.message = '';
+                    
+                    try {
+                        await aiApp.fetchData('/habits', 'POST', {
+                            ...this.habitLog,
+                            date: this.habitLog.date + 'T00:00:00'
+                        });
+                        
+                        this.message = '✅ Habits logged! Your AI brain is learning...';
+                        this.error = false;
+                        aiApp.showNotification('Habits saved successfully!');
+                    } catch (error) {
+                        this.message = `❌ Error: ${error.message}`;
+                        this.error = true;
+                        aiApp.showNotification('Failed to save habits', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async saveProductivity() {
+                    this.loading = true;
+                    this.message = '';
+                    
+                    try {
+                        await aiApp.fetchData('/productivity', 'POST', {
+                            ...this.productivityLog,
+                            date: this.productivityLog.date + 'T00:00:00'
+                        });
+                        
+                        this.message = '✅ Productivity logged! Your AI brain is learning...';
+                        this.error = false;
+                        aiApp.showNotification('Productivity saved successfully!');
+                    } catch (error) {
+                        this.message = `❌ Error: ${error.message}`;
+                        this.error = true;
+                        aiApp.showNotification('Failed to save productivity', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async saveMood() {
+                    this.loading = true;
+                    this.message = '';
+                    
+                    try {
+                        await aiApp.fetchData('/mood', 'POST', this.moodLog);
+                        
+                        this.message = '✅ Mood logged! Your AI brain is learning...';
+                        this.error = false;
+                        aiApp.showNotification('Mood saved successfully!');
+                    } catch (error) {
+                        this.message = `❌ Error: ${error.message}`;
+                        this.error = true;
+                        aiApp.showNotification('Failed to save mood', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Range Slider Styles */
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+            background: rgba(55, 65, 81, 1);
+            height: 12px;
+            border-radius: 6px;
+        }
+        
+        .slider-green::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #10b981, #047857);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+        }
+        
+        .slider-red::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+        }
+        
+        .slider-yellow::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+            cursor: pointer;
+        }
+        
+        .slider-purple::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            cursor: pointer;
+        }
+        
+        .slider-orange::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+            cursor: pointer;
+        }
+    </style>
+</body>
+</html>

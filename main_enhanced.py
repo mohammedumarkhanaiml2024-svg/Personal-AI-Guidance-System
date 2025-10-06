@@ -3,9 +3,10 @@ Enhanced Personal AI Guidance System API
 Implements comprehensive endpoints for all features (inputs & capabilities)
 """
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -28,17 +29,40 @@ app = FastAPI(
 # Add CORS middleware to allow frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=[
+        "*",  # Allow all origins
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
+
+# Global exception handler to ensure CORS headers on errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure CORS headers are sent even on unhandled exceptions"""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Create database tables
 models.Base.metadata.create_all(bind=database.engine)
 
 # Initialize services
 brain_service = PersonalBrainService()
+
+# Initialize privacy service for complete data isolation
+from data_privacy_service import DataPrivacyService
+privacy_service = DataPrivacyService()
 
 # Security
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -81,10 +105,31 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
+# ========== Root & Health Check Endpoints ==========
+@app.get("/")
+def root():
+    """Root endpoint - API info"""
+    return {
+        "message": "Personal AI Guidance System API",
+        "version": "2.0.0",
+        "status": "running",
+        "docs": "/docs"
+    }
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "cors_enabled": True
+    }
+
+
 # ========== Authentication Endpoints ==========
 @app.post("/register", response_model=schemas.UserOut)
-def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
+def register(user: schemas.UserRegistrationWithInfo, db: Session = Depends(get_db)):
+    """Register a new user with private data space and optional personal information"""
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -99,6 +144,27 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     profile = models.UserProfile(user_id=new_user.id)
     db.add(profile)
     db.commit()
+    
+    # Create isolated private data space for the new user
+    private_space = privacy_service.create_user_private_space(new_user.id)
+    print(f"Created private data space for user {new_user.id}: {private_space}")
+    
+    # Store personal information in user's private brain file if provided
+    if user.personal_info:
+        brain_service = PersonalBrainService()
+        brain = brain_service.get_user_brain(new_user.id)
+        
+        # Add personal information to brain
+        brain["personal_info"] = {
+            **user.personal_info.dict(exclude_unset=True),
+            "collected_at": datetime.now().isoformat(),
+            "last_updated": datetime.now().isoformat()
+        }
+        
+        brain_service._save_brain(new_user.id, brain)
+        print(f"Stored personal information for user {new_user.id}")
+    
+    return new_user
     
     return new_user
 
@@ -147,6 +213,66 @@ def update_profile(
     db.commit()
     db.refresh(profile)
     return profile
+
+
+# ========== Personal Information Endpoints (Stored in Brain) ==========
+@app.get("/profile/personal-info", response_model=schemas.PersonalInfoOut)
+def get_personal_info(current_user: models.User = Depends(get_current_user)):
+    """Get user's personal information from their private brain file"""
+    brain_service = PersonalBrainService()
+    brain = brain_service.get_user_brain(current_user.id)
+    
+    # Return personal info or empty dict if not set
+    personal_info = brain.get("personal_info", {})
+    return schemas.PersonalInfoOut(**personal_info)
+
+
+@app.put("/profile/personal-info", response_model=schemas.PersonalInfoOut)
+def update_personal_info(
+    personal_data: schemas.PersonalInfoUpdate,
+    current_user: models.User = Depends(get_current_user)
+):
+    """Update user's personal information in their private brain file"""
+    brain_service = PersonalBrainService()
+    brain = brain_service.get_user_brain(current_user.id)
+    
+    # Get existing personal info or create new
+    if "personal_info" not in brain:
+        brain["personal_info"] = {
+            "collected_at": datetime.now().isoformat()
+        }
+    
+    # Update with new data (only fields that are set)
+    update_data = personal_data.dict(exclude_unset=True)
+    brain["personal_info"].update(update_data)
+    brain["personal_info"]["last_updated"] = datetime.now().isoformat()
+    
+    # Save brain
+    brain_service._save_brain(current_user.id, brain)
+    
+    return schemas.PersonalInfoOut(**brain["personal_info"])
+
+
+@app.post("/profile/personal-info", response_model=schemas.PersonalInfoOut)
+def create_personal_info(
+    personal_data: schemas.PersonalInfoCreate,
+    current_user: models.User = Depends(get_current_user)
+):
+    """Create/overwrite user's personal information in their private brain file"""
+    brain_service = PersonalBrainService()
+    brain = brain_service.get_user_brain(current_user.id)
+    
+    # Create new personal info
+    brain["personal_info"] = {
+        **personal_data.dict(exclude_unset=True),
+        "collected_at": datetime.now().isoformat(),
+        "last_updated": datetime.now().isoformat()
+    }
+    
+    # Save brain
+    brain_service._save_brain(current_user.id, brain)
+    
+    return schemas.PersonalInfoOut(**brain["personal_info"])
 
 
 # ========== Goals Endpoints (Input Features) ==========
@@ -518,17 +644,17 @@ def root():
     }
 
 
-# ========== PERSONAL BRAIN ENDPOINTS ==========
+# ========== PERSONAL BRAIN ENDPOINTS (Privacy Enhanced) ==========
 
 @app.get("/brain/summary")
 def get_brain_summary(current_user: models.User = Depends(get_current_user)):
-    """Get user's brain summary"""
-    return brain_service.get_brain_summary(current_user.id)
+    """Get user's brain summary with complete data isolation"""
+    return privacy_service.get_ai_brain_summary(current_user.id)
 
 
 @app.get("/brain/context")
 def get_brain_context(current_user: models.User = Depends(get_current_user)):
-    """Get full brain context for debugging/viewing"""
+    """Get full brain context for debugging/viewing (user's private data only)"""
     return brain_service.get_user_brain(current_user.id)
 
 
@@ -537,11 +663,8 @@ def chat_with_personal_brain(
     message: schemas.ChatMessage,
     current_user: models.User = Depends(get_current_user)
 ):
-    """Chat using personal brain context - fully personalized responses"""
-    response = brain_service.generate_personalized_response(
-        current_user.id,
-        message.message
-    )
+    """Chat using personal brain context - fully personalized responses with data isolation"""
+    return privacy_service.chat_with_ai(current_user.id, message.message)
     
     # Save conversation to brain
     brain_service.update_brain_with_conversation(
@@ -582,6 +705,38 @@ def identify_personal_challenge(
     """Identify a challenge in brain"""
     brain = brain_service.identify_challenge(current_user.id, challenge)
     return {"message": "Challenge identified", "challenges": brain["challenges"]}
+
+
+# ========== DATA PRIVACY & ISOLATION ENDPOINTS ==========
+
+@app.get("/privacy/verification")
+def verify_data_privacy(current_user: models.User = Depends(get_current_user)):
+    """Verify that user's data is completely isolated and private"""
+    return privacy_service.verify_user_data_isolation(current_user.id)
+
+
+@app.get("/privacy/analytics")
+def get_private_analytics(current_user: models.User = Depends(get_current_user)):
+    """Get analytics from user's private data only (no mixing with other users)"""
+    return privacy_service.get_user_analytics(current_user.id)
+
+
+@app.get("/privacy/summary")
+def get_privacy_implementation():
+    """Get information about privacy implementation and data isolation"""
+    return privacy_service.get_data_privacy_summary()
+
+
+@app.delete("/privacy/delete-all-data")
+def delete_all_user_data(current_user: models.User = Depends(get_current_user)):
+    """GDPR Compliance: Completely delete all user data"""
+    return privacy_service.delete_all_user_data(current_user.id)
+
+
+@app.post("/privacy/create-space")
+def create_private_space(current_user: models.User = Depends(get_current_user)):
+    """Manually create/recreate private data space for user"""
+    return privacy_service.create_user_private_space(current_user.id)
 
 
 if __name__ == "__main__":
